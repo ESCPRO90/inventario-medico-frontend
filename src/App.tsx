@@ -25,12 +25,14 @@ import { EntradasPage } from '@/pages/inventario/EntradasPage';
 import { SalidasPage } from '@/pages/inventario/SalidasPage';
 import { InventarioPage } from '@/pages/inventario/InventarioPage';
 import { ReportesPage } from '@/pages/reportes/ReportesPage';
+import { NotFoundPage } from '@/pages/NotFoundPage'; // Import NotFoundPage
 
 // Store
-import { useAuthStore } from '@/store/authStore';
+import { useAuthStore } from '@/store/authStore'; // Keep this for the login route redirect logic
 
 const App: React.FC = () => {
-  const { isAuthenticated } = useAuthStore();
+  // Used to redirect if already authenticated and trying to access /login
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -38,7 +40,6 @@ const App: React.FC = () => {
         <CssBaseline />
         <Router>
           <Routes>
-            {/* Ruta de login */}
             <Route 
               path="/login" 
               element={
@@ -50,56 +51,107 @@ const App: React.FC = () => {
               } 
             />
 
-            {/* Rutas protegidas */}
+            {/* Rutas principales protegidas por autenticación general */}
             <Route
               path="/*"
               element={
+                // This ProtectedRoute ensures user is authenticated.
+                // It does NOT apply specific roles here.
                 <ProtectedRoute>
                   <MainLayout>
                     <Routes>
-                      {/* Dashboard */}
-                      <Route path="/dashboard" element={<DashboardPage />} />
+                      {/* Dashboard (no specific role, just needs authentication) */}
+                      <Route path="dashboard" element={<DashboardPage />} />
 
                       {/* Productos y Categorías */}
-                      <Route path="/productos" element={<ProductosPage />} />
-                      <Route path="/categorias" element={<CategoriasPage />} />
+                      <Route
+                        path="productos"
+                        element={
+                          <ProtectedRoute roles={['admin', 'bodeguero']}>
+                            <ProductosPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="categorias"
+                        element={
+                          <ProtectedRoute roles={['admin', 'bodeguero']}>
+                            <CategoriasPage />
+                          </ProtectedRoute>
+                        }
+                      />
 
                       {/* Proveedores */}
-                      <Route path="/proveedores" element={<ProveedoresPage />} />
+                      <Route
+                        path="proveedores"
+                        element={
+                          <ProtectedRoute roles={['admin', 'bodeguero']}>
+                            <ProveedoresPage />
+                          </ProtectedRoute>
+                        }
+                      />
 
                       {/* Clientes */}
-                      <Route path="/clientes" element={<ClientesPage />} />
+                      <Route
+                        path="clientes"
+                        element={
+                          <ProtectedRoute roles={['admin', 'vendedor', 'facturador']}>
+                            <ClientesPage />
+                          </ProtectedRoute>
+                        }
+                      />
 
                       {/* Inventario */}
-                      <Route path="/entradas" element={<EntradasPage />} />
-                      <Route path="/salidas" element={<SalidasPage />} />
-                      <Route path="/inventario" element={<InventarioPage />} />
+                      <Route
+                        path="entradas"
+                        element={
+                          <ProtectedRoute roles={['admin', 'bodeguero']}>
+                            <EntradasPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="salidas"
+                        element={
+                          <ProtectedRoute roles={['admin', 'vendedor', 'facturador']}>
+                            <SalidasPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="inventario"
+                        element={
+                          <ProtectedRoute roles={['admin', 'bodeguero']}>
+                            <InventarioPage />
+                          </ProtectedRoute>
+                        }
+                      />
 
                       {/* Reportes */}
-                      <Route path="/reportes" element={<ReportesPage />} />
-
-                      {/* Redirigir raíz a dashboard */}
-                      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
-                      {/* Página 404 */}
                       <Route 
-                        path="*" 
+                        path="reportes"
                         element={
-                          <div style={{ padding: '2rem', textAlign: 'center' }}>
-                            <h2>Página no encontrada</h2>
-                            <p>La página que buscas no existe.</p>
-                          </div>
+                          <ProtectedRoute roles={['admin', 'bodeguero', 'facturador']}>
+                            <ReportesPage />
+                          </ProtectedRoute>
                         } 
                       />
+
+                      {/* Redirigir raíz ("/") a dashboard */}
+                      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+                      {/* Página 404 para cualquier otra ruta dentro del layout */}
+                      <Route path="*" element={<NotFoundPage />} />
                     </Routes>
                   </MainLayout>
                 </ProtectedRoute>
               }
             />
+            {/* Consider a top-level 404 route if /* doesn't catch all unhandled non-layout paths */}
+            {/* However, with this structure, all non-login paths go through the /* route */}
           </Routes>
         </Router>
 
-        {/* Notificaciones Toast */}
         <Toaster
           position="top-right"
           toastOptions={{
@@ -124,8 +176,6 @@ const App: React.FC = () => {
             },
           }}
         />
-
-        {/* React Query Devtools (solo en desarrollo) */}
         <ReactQueryDevtools initialIsOpen={false} />
       </ThemeProvider>
     </QueryClientProvider>

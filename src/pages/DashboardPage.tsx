@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Box,
-  Grid,
+  // Grid, // Removed unused import
   Card,
   CardContent,
   Typography,
@@ -167,8 +167,8 @@ export const DashboardPage: React.FC = () => {
           mb: 4,
         }}
       >
-        {stats.map((stat, index) => (
-          <Box key={index}>
+        {stats.map((stat) => ( // index removed as stat.title can be used for key
+          <Box key={stat.title}>
             <Card 
               sx={{ 
                 height: '100%',
@@ -239,7 +239,7 @@ export const DashboardPage: React.FC = () => {
               </Typography>
             </Box>
             <List>
-              {recentActivities.map((activity, index) => (
+              {recentActivities.map((activity) => ( // index removed as activity.id is used for key
                 <ListItem
                   key={activity.id}
                   sx={{
@@ -293,9 +293,9 @@ export const DashboardPage: React.FC = () => {
                 'Paracetamol 500mg (5 unidades)',
                 'Ibuprofeno 400mg (8 unidades)',
                 'Alcohol 70% (12 unidades)',
-              ].map((producto, index) => (
+              ].map((producto) => ( // index removed, producto string itself will be key
                 <Chip
-                  key={index}
+                  key={producto}
                   label={producto}
                   color="warning"
                   variant="outlined"

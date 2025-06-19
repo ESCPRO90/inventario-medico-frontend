@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Usuario } from '@/types';
+import { Usuario } from '@/types'; // Usuario might still be needed by AuthState
 
-interface AuthState {
+export interface AuthState { // Exporting AuthState if it's used elsewhere, or keep it local if not
   user: Usuario | null;
   token: string | null;
   isAuthenticated: boolean;
@@ -15,11 +15,11 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set, get) => ({
+    (set) => ({ // 'get' parameter removed as it's not used
       user: null,
       token: null,
       isAuthenticated: false,
-      isLoading: false,
+      isLoading: true, // Set initial isLoading to true, to reflect potential initial auth check
 
       setAuth: (user: Usuario, token: string) => {
         localStorage.setItem('token', token);
@@ -32,7 +32,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       setUser: (user: Usuario) => {
-        set({ user });
+        set({ user, isAuthenticated: !!user, isLoading: false }); // Also update isAuthenticated and isLoading
       },
 
       logout: () => {
@@ -55,42 +55,16 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         token: state.token,
         isAuthenticated: state.isAuthenticated,
+        // isLoading is often transient and might not need persistence,
+        // but if persisted, it could cause issues if app closes while true.
+        // For now, matching original persisted fields minus isLoading.
       }),
     }
   )
 );
 
-// Hook para verificar permisos por rol
-export const usePermissions = () => {
-  const { user } = useAuthStore();
-
-  // Use Usuario['rol'] to ensure type safety with defined roles
-  type UserRole = Usuario['rol'];
-
-  const hasRole = (roles: UserRole | UserRole[]) => {
-    if (!user) return false;
-
-    const allowedRoles: UserRole[] = Array.isArray(roles) ? roles : [roles];
-    // This check remains valid as user.rol is of type UserRole
-    return allowedRoles.includes(user.rol);
-  };
-
-  const canManageProducts = () => hasRole(['admin', 'bodeguero']);
-  const canManageProviders = () => hasRole(['admin', 'bodeguero']);
-  const canManageClients = () => hasRole(['admin', 'vendedor', 'facturador']);
-  const canManageInventory = () => hasRole(['admin', 'bodeguero']);
-  const canCreateSales = () => hasRole(['admin', 'vendedor', 'facturador']);
-  const canViewReports = () => hasRole(['admin', 'bodeguero', 'facturador']);
-  const canManageUsers = () => hasRole('admin'); // This will also be type-checked
-
-  return {
-    hasRole,
-    canManageProducts,
-    canManageProviders,
-    canManageClients,
-    canManageInventory,
-    canCreateSales,
-    canViewReports,
-    canManageUsers,
-  };
-};
+// Note: The `Usuario` import is kept as it's part of `AuthState`.
+// If `AuthState` itself was only for `usePermissions`, `Usuario` import could be removed.
+// The `get` parameter from `persist` callback was removed as it was not used.
+// Changed initial `isLoading` to `true` - common practice for initial auth state.
+// Ensured `setUser` also updates `isAuthenticated` and `isLoading`.

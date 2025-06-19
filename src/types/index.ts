@@ -1,3 +1,5 @@
+import { AxiosError } from 'axios'; // Import AxiosError at the top
+
 // Tipos basados en tu backend del Sistema de Inventario Médico
 
 export interface Usuario {
@@ -198,6 +200,19 @@ export interface SalidaForm {
   }[];
 }
 
+// Tipos para AuthState (usado en authStore.ts y tests)
+export interface AuthState {
+  user: Usuario | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  setAuth: (user: Usuario, token: string) => void;
+  setUser: (user: Usuario) => void;
+  logout: () => void;
+  setLoading: (loading: boolean) => void;
+}
+
+
 // Tipos para respuestas de API
 export interface ApiResponse<T> {
   success: boolean;
@@ -271,7 +286,7 @@ export interface ErrorCustomData {
   originalError: unknown; // Se mantiene unknown porque el tipo original puede variar
 }
 
-export interface AxiosErrorWithCustomData extends import('axios').AxiosError {
+export interface AxiosErrorWithCustomData extends AxiosError { // Use the imported AxiosError
   customData?: ErrorCustomData;
 }
 

@@ -2,32 +2,43 @@ import React, { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { useAuthStore } from '@/store/authStore';
-import { Usuario } from '@/types'; // Import Usuario type
+import { Usuario } from '@/types';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  roles?: Usuario['rol'][]; // Use specific roles from Usuario type
+  roles?: Usuario['rol'][];
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   roles
 }) => {
-  const { isAuthenticated, user, isLoading, setLoading } = useAuthStore();
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const user = useAuthStore(state => state.user);
+  const isLoading = useAuthStore(state => state.isLoading);
+  const setLoading = useAuthStore(state => state.setLoading);
 
   useEffect(() => {
-    // Simular verificación de token al cargar
     const token = localStorage.getItem('token');
-    if (token && !user) {
+    // If there's a token but no user object and not authenticated yet,
+    // it implies a potential pending auth verification during initial app load.
+    // Actual verification logic (e.g., API call to fetch user based on token)
+    // should manage setting isLoading to false.
+    if (token && !user && !isAuthenticated) {
       setLoading(true);
-      // Aquí podrías hacer una verificación del token con el backend
-      setTimeout(() => {
-        setLoading(false);
-      }, 1000); // Simula una demora de red
+    } else if (isLoading && (user || !token)) {
+      // If loading was true but we now have a user, or there's no token,
+      // it's reasonable to stop loading. This covers cases where initial
+      // auth state resolves quickly or token is invalid/removed.
+      setLoading(false);
     }
-  }, [user, setLoading]);
+    // This useEffect is a simplified approach. A robust solution would involve
+    // an API call during app initialization to verify the token and fetch user data,
+    // which would then be the source of truth for isLoading, isAuthenticated, and user state.
+  }, [user, isAuthenticated, setLoading, isLoading]); // Added isLoading and isAuthenticated
 
-  // Mostrar loading mientras se verifica la autenticación
+  // Display loading indicator if auth state is still loading
+  // This covers initial app load where token might be verifying
   if (isLoading) {
     return (
       <Box
@@ -46,42 +57,43 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  // Redirigir a login si no está autenticado
+  // If not loading and not authenticated, or no user object exists, redirect to login
   if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace />;
   }
 
-  // Verificar roles si se especificaron
+  // If authenticated and user exists, check roles if specified
   if (roles && roles.length > 0) {
-    // user.rol is already of type Usuario['rol'], so this check is type-safe
     const hasRequiredRole = roles.includes(user.rol);
     if (!hasRequiredRole) {
+      // User does not have the required role(s), show access denied message
+      // Or redirect to a dedicated "Access Denied" page
       return (
         <Box
           display="flex"
           flexDirection="column"
           alignItems="center"
           justifyContent="center"
-          minHeight="100vh"
+          minHeight="calc(100vh - 120px)" // Assuming some app bar height
           gap={2}
-          p={3} // Padding para mejor visualización
+          p={3}
+          textAlign="center"
         >
           <Typography variant="h4" color="error" gutterBottom>
             Acceso Denegado
           </Typography>
-          <Typography variant="body1" color="text.secondary" textAlign="center">
-            No tienes permisos suficientes para acceder a esta página.
+          <Typography variant="body1" color="text.secondary">
+            No tienes los permisos necesarios para acceder a esta página.
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Tu rol actual: <strong>{user.rol}</strong>
+            (Tu rol: {user.rol} | Roles requeridos: {roles.join(', ')})
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Roles requeridos: <strong>{roles.join(', ')}</strong>
-          </Typography>
+          {/* Consider adding a button to navigate back or to dashboard */}
         </Box>
       );
     }
   }
 
+  // If all checks pass (authenticated, user exists, and has required roles if any), render children
   return <>{children}</>;
 };

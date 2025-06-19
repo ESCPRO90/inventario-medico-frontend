@@ -35,7 +35,8 @@ import {
   TrendingDown,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuthStore, usePermissions } from '@/store/authStore';
+import { useAuthStore } from '@/store/authStore';
+import { usePermissions } from '@/hooks/usePermissions'; // Updated import path
 import { Usuario } from '@/types';
 import { UserProfileMenu } from './UserProfileMenu'; // Import the new component
 
@@ -59,7 +60,8 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuthStore();
+  const user = useAuthStore(state => state.user);
+  const logout = useAuthStore(state => state.logout);
   const permissions = usePermissions();
 
   // menuItems definition remains the same
