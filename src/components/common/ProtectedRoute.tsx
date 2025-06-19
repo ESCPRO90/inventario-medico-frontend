@@ -2,15 +2,16 @@ import React, { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { useAuthStore } from '@/store/authStore';
+import { Usuario } from '@/types'; // Import Usuario type
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  roles?: string[];
+  roles?: Usuario['rol'][]; // Use specific roles from Usuario type
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
-  roles 
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
+  roles
 }) => {
   const { isAuthenticated, user, isLoading, setLoading } = useAuthStore();
 
@@ -22,7 +23,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       // Aquí podrías hacer una verificación del token con el backend
       setTimeout(() => {
         setLoading(false);
-      }, 1000);
+      }, 1000); // Simula una demora de red
     }
   }, [user, setLoading]);
 
@@ -52,6 +53,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Verificar roles si se especificaron
   if (roles && roles.length > 0) {
+    // user.rol is already of type Usuario['rol'], so this check is type-safe
     const hasRequiredRole = roles.includes(user.rol);
     if (!hasRequiredRole) {
       return (
@@ -62,7 +64,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           justifyContent="center"
           minHeight="100vh"
           gap={2}
-          p={3}
+          p={3} // Padding para mejor visualización
         >
           <Typography variant="h4" color="error" gutterBottom>
             Acceso Denegado

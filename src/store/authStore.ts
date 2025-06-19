@@ -23,11 +23,11 @@ export const useAuthStore = create<AuthState>()(
 
       setAuth: (user: Usuario, token: string) => {
         localStorage.setItem('token', token);
-        set({ 
-          user, 
-          token, 
+        set({
+          user,
+          token,
           isAuthenticated: true,
-          isLoading: false 
+          isLoading: false
         });
       },
 
@@ -37,11 +37,11 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => {
         localStorage.removeItem('token');
-        set({ 
-          user: null, 
-          token: null, 
+        set({
+          user: null,
+          token: null,
           isAuthenticated: false,
-          isLoading: false 
+          isLoading: false
         });
       },
 
@@ -64,10 +64,14 @@ export const useAuthStore = create<AuthState>()(
 export const usePermissions = () => {
   const { user } = useAuthStore();
 
-  const hasRole = (roles: string | string[]) => {
+  // Use Usuario['rol'] to ensure type safety with defined roles
+  type UserRole = Usuario['rol'];
+
+  const hasRole = (roles: UserRole | UserRole[]) => {
     if (!user) return false;
-    
-    const allowedRoles = Array.isArray(roles) ? roles : [roles];
+
+    const allowedRoles: UserRole[] = Array.isArray(roles) ? roles : [roles];
+    // This check remains valid as user.rol is of type UserRole
     return allowedRoles.includes(user.rol);
   };
 
@@ -77,7 +81,7 @@ export const usePermissions = () => {
   const canManageInventory = () => hasRole(['admin', 'bodeguero']);
   const canCreateSales = () => hasRole(['admin', 'vendedor', 'facturador']);
   const canViewReports = () => hasRole(['admin', 'bodeguero', 'facturador']);
-  const canManageUsers = () => hasRole(['admin']);
+  const canManageUsers = () => hasRole('admin'); // This will also be type-checked
 
   return {
     hasRole,

@@ -263,3 +263,31 @@ export interface EstadisticasMovimientos {
   valor_entradas_mes: number;
   valor_salidas_mes: number;
 }
+
+// Tipos para errores de Axios personalizados
+export interface ErrorCustomData {
+  status?: number;
+  message: string;
+  originalError: unknown; // Se mantiene unknown porque el tipo original puede variar
+}
+
+export interface AxiosErrorWithCustomData extends import('axios').AxiosError {
+  customData?: ErrorCustomData;
+}
+
+// Tipos para filtros de reportes
+export interface ReporteInventarioFilters {
+  fecha_inicio?: string;
+  fecha_fin?: string;
+  categoria_id?: number;
+  proveedor_id?: number;
+  // Considerar añadir más filtros específicos si son necesarios
+}
+
+export interface ReporteMovimientosFilters {
+  fecha_inicio?: string;
+  fecha_fin?: string;
+  tipo_movimiento?: 'entrada' | 'salida' | 'ajuste'; // Ejemplo de tipos de movimiento
+  producto_id?: number;
+  // Considerar añadir más filtros específicos si son necesarios
+}
