@@ -1,15 +1,22 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import {
+  AxiosErrorWithCustomData,
+  ProductoFilters,
+  ReporteInventarioFilters,
+  ReporteMovimientosFilters
+} from '../types'; // Adjusted path assuming types is one level up
 
 // Configuración del cliente de React Query
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutos
-      cacheTime: 10 * 60 * 1000, // 10 minutos (antes cacheTime)
-      retry: (failureCount, error: any) => {
+      cacheTime: 10 * 60 * 1000, // 10 minutos
+      retry: (failureCount: number, error: AxiosErrorWithCustomData) => {
         // No reintentar en errores 404 o 401
-        if (error?.response?.status === 404 || error?.response?.status === 401) {
+        const status = error.customData?.status ?? error.response?.status;
+        if (status === 404 || status === 401) {
           return false;
         }
         return failureCount < 3;
@@ -18,7 +25,7 @@ export const queryClient = new QueryClient({
       refetchOnMount: true,
     },
     mutations: {
-      retry: 1,
+      retry: 1, // Reintentar mutaciones 1 vez por defecto
     },
   },
 });
@@ -32,7 +39,7 @@ export const queryKeys = {
   // Productos
   productos: ['productos'] as const,
   producto: (id: number) => ['productos', id] as const,
-  productosSearch: (filters: any) => ['productos', 'search', filters] as const,
+  productosSearch: (filters: ProductoFilters) => ['productos', 'search', filters] as const,
   productosStockBajo: ['productos', 'stock-bajo'] as const,
   productosProximosVencer: ['productos', 'proximos-vencer'] as const,
 
@@ -67,8 +74,8 @@ export const queryKeys = {
 
   // Reportes
   reportes: ['reportes'] as const,
-  reporteInventario: (filters: any) => ['reportes', 'inventario', filters] as const,
-  reporteMovimientos: (filters: any) => ['reportes', 'movimientos', filters] as const,
+  reporteInventario: (filters: ReporteInventarioFilters) => ['reportes', 'inventario', filters] as const,
+  reporteMovimientos: (filters: ReporteMovimientosFilters) => ['reportes', 'movimientos', filters] as const,
   estadisticas: ['reportes', 'estadisticas'] as const,
 } as const;
 
@@ -82,7 +89,7 @@ export const invalidateQueries = {
   salidas: () => queryClient.invalidateQueries({ queryKey: queryKeys.salidas }),
   inventario: () => queryClient.invalidateQueries({ queryKey: queryKeys.inventario }),
   reportes: () => queryClient.invalidateQueries({ queryKey: queryKeys.reportes }),
-  all: () => queryClient.invalidateQueries(),
+  all: () => queryClient.invalidateQueries(), // Invalida todas las queries
 };
 
 // Provider personalizado con configuración

@@ -26,7 +26,7 @@ import toast from 'react-hot-toast';
 
 import { useAuthStore } from '@/store/authStore';
 import api from '@/services/api';
-import { LoginForm, ApiResponse, Usuario } from '@/types';
+import { LoginForm, ApiResponse, Usuario, AxiosErrorWithCustomData } from '@/types';
 
 // Esquema de validación
 const loginSchema = yup.object({
@@ -42,14 +42,14 @@ const loginSchema = yup.object({
 
 export const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  // Local isLoading removed
   const navigate = useNavigate();
-  const { setAuth } = useAuthStore();
+  const setAuth = useAuthStore(state => state.setAuth); // Using selector for setAuth
 
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting }, // Destructure isSubmitting
     setError,
   } = useForm<LoginForm>({
     resolver: yupResolver(loginSchema),
@@ -60,7 +60,7 @@ export const LoginPage: React.FC = () => {
   });
 
   const onSubmit = async (data: LoginForm) => {
-    setIsLoading(true);
+    // setIsLoading(true) removed; RHF handles isSubmitting
     try {
       const response = await api.post<ApiResponse<{
         user: Usuario;
@@ -73,25 +73,28 @@ export const LoginPage: React.FC = () => {
         toast.success(`Bienvenido, ${user.nombre}!`);
         navigate('/dashboard');
       }
-    } catch (error: any) {
-      console.error('Error en login:', error);
-      
-      if (error.response?.status === 401) {
-        setError('root', { 
-          message: 'Email o contraseña incorrectos' 
+    } catch (error) {
+      const err = error as AxiosErrorWithCustomData;
+      console.error('Error en login:', err);
+
+      const status = err.customData?.status ?? err.response?.status;
+      const message = err.customData?.message;
+
+      if (status === 401) {
+        setError('root', {
+          message: message || 'Email o contraseña incorrectos'
         });
-      } else if (error.response?.status === 403) {
-        setError('root', { 
-          message: 'Tu cuenta está inactiva. Contacta al administrador.' 
+      } else if (status === 403) {
+        setError('root', {
+          message: message || 'Tu cuenta está inactiva. Contacta al administrador.'
         });
       } else {
-        setError('root', { 
-          message: 'Error de conexión. Intenta nuevamente.' 
+        setError('root', {
+          message: message || 'Error de conexión. Intenta nuevamente.'
         });
       }
-    } finally {
-      setIsLoading(false);
     }
+    // finally { setIsLoading(false) } removed; RHF handles isSubmitting
   };
 
   const handleTogglePassword = () => {
@@ -120,23 +123,23 @@ export const LoginPage: React.FC = () => {
         >
           {/* Logo y título */}
           <Box sx={{ mb: 3 }}>
-            <LocalHospital 
-              sx={{ 
-                fontSize: 60, 
-                color: 'primary.main', 
-                mb: 2 
-              }} 
+            <LocalHospital
+              sx={{
+                fontSize: 60,
+                color: 'primary.main',
+                mb: 2
+              }}
             />
-            <Typography 
-              variant="h4" 
-              component="h1" 
-              gutterBottom 
+            <Typography
+              variant="h4"
+              component="h1"
+              gutterBottom
               sx={{ fontWeight: 600 }}
             >
               Inventario Médico
             </Typography>
-            <Typography 
-              variant="body1" 
+            <Typography
+              variant="body1"
               color="text.secondary"
             >
               Ingresa a tu cuenta para continuar
@@ -144,8 +147,8 @@ export const LoginPage: React.FC = () => {
           </Box>
 
           {/* Formulario */}
-          <Box 
-            component="form" 
+          <Box
+            component="form"
             onSubmit={handleSubmit(onSubmit)}
             sx={{ mt: 3 }}
           >
@@ -164,6 +167,7 @@ export const LoginPage: React.FC = () => {
               type="email"
               autoComplete="email"
               autoFocus
+              disabled={isSubmitting} // Disable fields when submitting
               error={!!errors.email}
               helperText={errors.email?.message}
               sx={{ mb: 2 }}
@@ -183,6 +187,7 @@ export const LoginPage: React.FC = () => {
               label="Contraseña"
               type={showPassword ? 'text' : 'password'}
               autoComplete="current-password"
+              disabled={isSubmitting} // Disable fields when submitting
               error={!!errors.password}
               helperText={errors.password?.message}
               sx={{ mb: 3 }}
@@ -198,6 +203,7 @@ export const LoginPage: React.FC = () => {
                       aria-label="toggle password visibility"
                       onClick={handleTogglePassword}
                       edge="end"
+                      disabled={isSubmitting} // Disable toggle when submitting
                     >
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
@@ -212,14 +218,14 @@ export const LoginPage: React.FC = () => {
               fullWidth
               variant="contained"
               size="large"
-              disabled={isLoading}
-              sx={{ 
+              disabled={isSubmitting} // Use isSubmitting for disabled state
+              sx={{
                 py: 1.5,
                 fontSize: '1.1rem',
                 fontWeight: 600,
               }}
             >
-              {isLoading ? (
+              {isSubmitting ? ( // Use isSubmitting for loader display
                 <CircularProgress size={24} color="inherit" />
               ) : (
                 'Iniciar Sesión'

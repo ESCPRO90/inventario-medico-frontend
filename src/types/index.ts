@@ -1,3 +1,5 @@
+import { AxiosError } from 'axios'; // Import AxiosError at the top
+
 // Tipos basados en tu backend del Sistema de Inventario Médico
 
 export interface Usuario {
@@ -198,6 +200,19 @@ export interface SalidaForm {
   }[];
 }
 
+// Tipos para AuthState (usado en authStore.ts y tests)
+export interface AuthState {
+  user: Usuario | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  setAuth: (user: Usuario, token: string) => void;
+  setUser: (user: Usuario) => void;
+  logout: () => void;
+  setLoading: (loading: boolean) => void;
+}
+
+
 // Tipos para respuestas de API
 export interface ApiResponse<T> {
   success: boolean;
@@ -262,4 +277,32 @@ export interface EstadisticasMovimientos {
   salidas_mes: number;
   valor_entradas_mes: number;
   valor_salidas_mes: number;
+}
+
+// Tipos para errores de Axios personalizados
+export interface ErrorCustomData {
+  status?: number;
+  message: string;
+  originalError: unknown; // Se mantiene unknown porque el tipo original puede variar
+}
+
+export interface AxiosErrorWithCustomData extends AxiosError { // Use the imported AxiosError
+  customData?: ErrorCustomData;
+}
+
+// Tipos para filtros de reportes
+export interface ReporteInventarioFilters {
+  fecha_inicio?: string;
+  fecha_fin?: string;
+  categoria_id?: number;
+  proveedor_id?: number;
+  // Considerar añadir más filtros específicos si son necesarios
+}
+
+export interface ReporteMovimientosFilters {
+  fecha_inicio?: string;
+  fecha_fin?: string;
+  tipo_movimiento?: 'entrada' | 'salida' | 'ajuste'; // Ejemplo de tipos de movimiento
+  producto_id?: number;
+  // Considerar añadir más filtros específicos si son necesarios
 }
